@@ -21,7 +21,7 @@ public class BrailleASCIITables {
    * @return The string of bits representing the corresponding braille character
    */
   public static String toBraille(char letter) {
-    // STUB
+    return asciiToBrailleTree.get(Integer.toBinaryString(letter));
   } // toBraille(char)
 
   /**
@@ -30,8 +30,19 @@ public class BrailleASCIITables {
    * @param bits The string of bits representing a braille character
    * @return The corresponding Unicode braille character
    */
+  public static String toASCII(String bits) {
+    return brailleToAsciiTree.get(bits);
+  } // toASCII(String)
+
+  /**
+   * Converts a string of bits representing a braille character to the corresponding Unicode braille
+   * character
+   * 
+   * @param bits The string of bits representing a braille character
+   * @return The corresponding Unicode braille character
+   */
   public static String toUnicode(String bits) {
-    // STUB
+    return brailleToUnicodeTree.get(bits);
   } // toUnicode(String)
 
   // Private method to initialize bit trees from a file
