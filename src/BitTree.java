@@ -1,5 +1,5 @@
-import java.io.InputStream;
-import java.io.PrintWriter;
+import java.io.*;
+import java.util.HashMap;
 
 /**
  * Represents a binary tree for mapping bits to values.
@@ -14,7 +14,8 @@ public class BitTree {
    * @param n The length of the bits for this tree
    */
   public BitTree(int n) {
-    // STUB
+    this.bitLength = n;
+    this.root = new BitTreeNode();
   } // BitTree(int)
 
   /**
@@ -26,7 +27,28 @@ public class BitTree {
    *         than 0 or 1
    */
   public void set(String bits, String value) {
-    // STUB
+    if (bits.length() != bitLength || !isValidBits(bits)) {
+      throw new IllegalArgumentException("Invalid bits");
+    }
+
+    BitTreeNode currentNode = root;
+
+    for (char bit : bits.toCharArray()) {
+      if (bit == '0') {
+        if (currentNode.getLeft() == null) {
+          currentNode.setLeft(new BitTreeNode());
+        }
+        currentNode = currentNode.getLeft();
+      } else if (bit == '1') {
+        if (currentNode.getRight() == null) {
+          currentNode.setRight(new BitTreeNode());
+        }
+        currentNode = currentNode.getRight();
+      }
+    }
+
+    // Create a new leaf node with the specified value
+    currentNode.setLeft(new BitTreeLeaf(value));
   } // set(String, String)
 
   /**
@@ -37,7 +59,31 @@ public class BitTree {
    * @throws IllegalArgumentException if there is no such path or if bitsis the incorrect length
    */
   public String get(String bits) {
-    // STUB
+    if (bits.length() != bitLength || !isValidBits(bits)) {
+      throw new IllegalArgumentException("Invalid bits");
+    }
+    BitTreeNode currentNode = root;
+
+    for (char bit : bits.toCharArray()) {
+      if (bit == '0') {
+        if (currentNode.getLeft() == null) {
+          throw new IllegalArgumentException("No such path");
+        }
+        currentNode = currentNode.getLeft();
+      } else if (bit == '1') {
+        if (currentNode.getRight() == null) {
+          throw new IllegalArgumentException("No such path");
+        }
+        currentNode = currentNode.getRight();
+      }
+    }
+
+    // Check if the node is a leaf
+    if (currentNode instanceof BitTreeLeaf) {
+      return ((BitTreeLeaf) currentNode).getValue();
+    } else {
+      throw new IllegalArgumentException("No such path");
+    }
   } // get(String)
 
   /**
@@ -46,7 +92,20 @@ public class BitTree {
    * @param pen The PrintWriter to write the output to.
    */
   public void dump(PrintWriter pen) {
-    // STUB
+    dumpHelper(root, "", pen);
+  } // dump(PrintWriter)
+
+  private void dumpHelper(BitTreeNode node, String bits, PrintWriter pen) {
+    if (node instanceof BitTreeLeaf) {
+      pen.println(bits + "," + ((BitTreeLeaf) node).getValue());
+    } else {
+      if (node.getLeft() != null) {
+        dumpHelper(node.getLeft(), bits + "0", pen);
+      }
+      if (node.getRight() != null) {
+        dumpHelper(node.getRight(), bits + "1", pen);
+      }
+    }
   }
 
   /**
@@ -55,6 +114,21 @@ public class BitTree {
    * @param source The InputStream to read from
    */
   public void load(InputStream source) {
-    // STUB
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(source))) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        String[] parts = line.split(",");
+        if (parts.length == 2) {
+          set(parts[0], parts[1]);
+        }
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   } // load(InputStream)
+
+  // Helper method to check if bits contain only '0' and '1'
+  private boolean isValidBits(String bits) {
+    return bits.matches("[01]+");
+  } // isValidBits(String)
 } // class BitTree
