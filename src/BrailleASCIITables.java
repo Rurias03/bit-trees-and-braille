@@ -1,69 +1,109 @@
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * Provides static methods for converting between ASCII, Braille, and Unicode representations
- */
 public class BrailleASCIITables {
-  private static BitTree asciiToBrailleTree; // Bit tree for ASCII to Braille translation
-  private static BitTree brailleToAsciiTree; // Bit tree for Braille to ASCII translation
-  private static BitTree brailleToUnicodeTree; // Bit tree for Braille to Unicode translation
 
-  // Static block to initialize bit trees form a file
+  private static final Map<String, Character> asciiToBrailleMap = new HashMap<>();
+  private static final Map<String, Character> brailleToAsciiMap = new HashMap<>();
+  private static final Map<String, String> brailleToUnicodeMap = new HashMap<>();
+
+  // Load mappings from the provided text file
   static {
-    initializeBitTrees();
+    loadMappingsFromFile("braille_to_ascii.txt", "braille_to_unicode.txt", "ascii_to_braille.txt");
   }
 
   /**
-   * Converts an ASCII character to a string of bits representing the corresponding braille
-   * character
-   * 
-   * @param letter The ASCII character to convert
-   * @return The string of bits representing the corresponding braille character
+   * Loads mappings from the specified text files and populates the maps.
+   *
+   * @param brailleToAsciiPath The path to the Braille-to-ASCII text file.
+   * @param brailleToUnicodePath The path to the Braille-to-Unicode text file.
+   * @param asciiToBraillePath The path to the ASCII-to-Braille text file.
    */
-  public static String toBraille(char letter) {
-    return asciiToBrailleTree.get(Integer.toBinaryString(letter));
-  } // toBraille(char)
+  private static void loadMappingsFromFile(String brailleToAsciiPath, String brailleToUnicodePath,
+      String asciiToBraillePath) {
+    loadAsciiMappings(asciiToBraillePath);
+    loadBrailleMappings(brailleToAsciiPath);
+    loadUnicodeMappings(brailleToUnicodePath);
+  }
 
-  /**
-   * Converts a string of bits representing a braille character to the corresponding ASCII character
-   * 
-   * @param bits The string of bits representing a braille character
-   * @return The corresponding Unicode braille character
-   */
-  public static String toASCII(String bits) {
-    return brailleToAsciiTree.get(bits);
-  } // toASCII(String)
+  private static void loadAsciiMappings(String filePath) {
+    loadCharacterMapping(filePath, asciiToBrailleMap);
+  }
 
-  /**
-   * Converts a string of bits representing a braille character to the corresponding Unicode braille
-   * character
-   * 
-   * @param bits The string of bits representing a braille character
-   * @return The corresponding Unicode braille character
-   */
-  public static String toUnicode(String bits) {
-    return brailleToUnicodeTree.get(bits);
-  } // toUnicode(String)
+  private static void loadBrailleMappings(String filePath) {
+    loadCharacterMapping(filePath, brailleToAsciiMap);
+  }
 
-  // Private method to initialize bit trees from a file
-  private static void initializeBitTrees() {
-    try (InputStream inputStream =
-        BrailleASCIITables.class.getResourceAsStream("/braille_tables.txt")) {
-      asciiToBrailleTree = new BitTree(7);
-      brailleToAsciiTree = new BitTree(6);
-      brailleToUnicodeTree = new BitTree(6);
+  private static void loadUnicodeMappings(String filePath) {
+    loadStringMapping(filePath, brailleToUnicodeMap);
+  }
 
-      if (inputStream != null) {
-        asciiToBrailleTree.load(inputStream);
-        brailleToAsciiTree.load(inputStream);
-        brailleToUnicodeTree.load(inputStream);
-      } else {
-        // Handle the case where the file is not found or cannot be read
-        System.err.println("Error: Unable to load braille tables from file.");
+  private static void loadStringMapping(String filePath, Map<String, String> map) {
+    try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        String[] parts = line.split(",");
+        if (parts.length == 2) {
+          map.put(parts[0], parts[1]);
+        }
       }
     } catch (IOException e) {
-      // Hanlde IOException
       e.printStackTrace();
     }
-  } // initializeBitTrees()
-} // class BrailleASCIITables
+  }
+
+  private static void loadCharacterMapping(String filePath, Map<String, Character> map) {
+    try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        String[] parts = line.split(",");
+        if (parts.length == 2 && parts[1].length() == 1) {
+          map.put(parts[0], parts[1].charAt(0));
+        }
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * Converts an ASCII character to its braille representation.
+   *
+   * @param letter The ASCII character to convert.
+   * @return The braille representation in binary.
+   */
+  public static String toBraille(char letter) {
+    return String.format("%06d", Integer.parseInt(Integer.toBinaryString(letter)));
+  }
+
+  /**
+   * Converts a braille representation to the corresponding ASCII character.
+   *
+   * @param bits The braille representation in binary.
+   * @return The ASCII character.
+   */
+  public static String toASCII(String bits) {
+    StringBuilder result = new StringBuilder();
+
+    for (int i = 0; i < bits.length(); i += 6) {
+      String asciiChunk = bits.substring(i, Math.min(i + 6, bits.length()));
+      char asciiChar = (char) Integer.parseInt(asciiChunk, 2);
+      result.append(asciiChar);
+    }
+
+    return result.toString();
+  }
+
+  /**
+   * Converts a braille representation to the corresponding Unicode braille character.
+   *
+   * @param bits The braille representation in binary.
+   * @return The Unicode braille character.
+   */
+  public static String toUnicode(String bits) {
+    return brailleToUnicodeMap.getOrDefault(bits, "");
+  }
+}
